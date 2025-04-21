@@ -9,135 +9,174 @@ class BukuDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Detail Buku',
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
-          ),
-        ),
-        elevation: 0,
-        scrolledUnderElevation: 1,
-      ),
+      backgroundColor: Colors.grey[50],
       body: CustomScrollView(
         slivers: [
-          SliverPadding(
-            padding: const EdgeInsets.all(16),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                _buildInfoCard(),
-                const SizedBox(height: 24),
-                Text(
-                  book.judulBuku,
-                  style: GoogleFonts.poppins(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.grey[900],
-                  ),
+          // Custom app bar with back button
+          SliverAppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            pinned: true,
+            leading: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: CircleAvatar(
+                backgroundColor: Colors.white.withOpacity(0.9),
+                child: IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.black87),
+                  onPressed: () => Navigator.pop(context),
                 ),
-                const SizedBox(height: 16),
-                _buildDetailRow('Penulis', book.penulis),
-                _buildDetailRow('Tahun Terbit', book.tahunTerbit.toString()),
-                const SizedBox(height: 24),
-                Text(
-                  'Deskripsi',
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey[800],
+              ),
+            ),
+          ),
+
+          // Book cover and title section
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Cover image with shadow
+                  Center(
+                    child: Container(
+                      height: size.height * 0.35,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 15,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          book.sampulBuku,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: Colors.grey[300],
+                              child: const Icon(Icons.broken_image,
+                                  size: 100, color: Colors.grey),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  book.deskripsiBuku,
-                  style: GoogleFonts.poppins(
-                    fontSize: 15,
-                    height: 1.7,
-                    color: Colors.grey[700],
+
+                  const SizedBox(height: 24),
+
+                  // Book title - allowed to wrap to multiple lines
+                  Text(
+                    book.judulBuku,
+                    style: GoogleFonts.poppins(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[800],
+                      height: 1.3,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.justify,
-                ),
-              ]),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildInfoCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.blue[50],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue[100]!),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildInfoRow('ID Buku', book.idBuku.toString()),
-          const Divider(height: 16, thickness: 0.5),
-          _buildInfoRow('Tahun Terbit', book.tahunTerbit.toString()),
-          const Divider(height: 16, thickness: 0.5),
-          _buildInfoRow('Penulis', book.penulis),
-        ],
-      ),
-    );
-  }
+                  const SizedBox(height: 8),
 
-  Widget _buildInfoRow(String label, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 100,
-          child: Text(
-            label,
-            style: GoogleFonts.poppins(
-              fontWeight: FontWeight.w500,
-              color: Colors.grey[600],
-              fontSize: 14,
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            value,
-            style: GoogleFonts.poppins(
-              fontWeight: FontWeight.w500,
-              fontSize: 14,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+                  // Author
+                  Center(
+                    child: Text(
+                      book.penulis,
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey[600],
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
 
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '$label: ',
-            style: GoogleFonts.poppins(
-              fontWeight: FontWeight.w500,
-              color: Colors.grey[600],
-              fontSize: 15,
+                  const SizedBox(height: 4),
+
+                  // Year
+                  Center(
+                    child: Text(
+                      book.tahunTerbit.toString(),
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        color: Colors.grey[500],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          Expanded(
-            child: Text(
-              value,
-              style: GoogleFonts.poppins(
-                fontSize: 15,
-                color: Colors.grey[700],
+
+          // Book details section
+          SliverToBoxAdapter(
+            child: Container(
+              margin: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Book ID in a subtle chip
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Chip(
+                      backgroundColor: Colors.grey[100],
+                      label: Text(
+                        'ID: ${book.idBuku}',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      padding: EdgeInsets.zero,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Description heading
+                  Text(
+                    'Deskripsi',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[800],
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Description text
+                  Text(
+                    book.deskripsiBuku,
+                    style: GoogleFonts.poppins(
+                      fontSize: 15,
+                      height: 1.7,
+                      color: Colors.grey[700],
+                    ),
+                    textAlign: TextAlign.justify,
+                  ),
+                ],
               ),
             ),
           ),

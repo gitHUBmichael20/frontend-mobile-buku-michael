@@ -3,6 +3,7 @@ class Book {
   final String judulBuku;
   final String deskripsiBuku;
   final String penulis;
+  final String sampulBuku;
   final int tahunTerbit;
 
   Book({
@@ -10,6 +11,7 @@ class Book {
     required this.judulBuku,
     required this.deskripsiBuku,
     required this.penulis,
+    required this.sampulBuku,
     required this.tahunTerbit,
   });
 
@@ -20,6 +22,7 @@ class Book {
       deskripsiBuku: json['deskripsi_buku'],
       penulis: json['penulis'],
       tahunTerbit: json['tahun_terbit'],
+      sampulBuku: json['sampul_buku'],
     );
   }
 }

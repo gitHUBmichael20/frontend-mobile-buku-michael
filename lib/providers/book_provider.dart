@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:front_end_mobile/models/book_model.dart';
+import 'package:front_end_mobile/config/api_config.dart';
 
 class BookProvider with ChangeNotifier {
   List<Book> _books = [];
@@ -18,7 +19,7 @@ class BookProvider with ChangeNotifier {
       notifyListeners();
 
       final response = await http.get(
-        Uri.parse('http://192.168.168.1:8000/index'),
+        Uri.parse(ApiConfig.booksEndpoint),
         headers: {'Accept': 'application/json'},
       );
 

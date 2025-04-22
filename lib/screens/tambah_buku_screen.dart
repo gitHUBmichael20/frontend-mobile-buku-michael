@@ -7,6 +7,7 @@ class TambahBukuScreen extends StatefulWidget {
   const TambahBukuScreen({super.key});
 
   @override
+  // ignore: library_private_types_in_public_api
   _TambahBukuScreenState createState() => _TambahBukuScreenState();
 }
 

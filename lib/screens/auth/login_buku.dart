@@ -1,15 +1,12 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:front_end_mobile/config/api_config.dart'; // Adjust the import path as needed
 
 class LoginScreen extends StatefulWidget {
-  // ignore: use_super_parameters
   const LoginScreen({Key? key}) : super(key: key);
 
   @override
-  // ignore: library_private_types_in_public_api
   _LoginScreenState createState() => _LoginScreenState();
 }
 
@@ -19,47 +16,134 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
 
-  Future<void> _handleLogin() async {
+  Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
     try {
       final response = await http.post(
-        Uri.parse('${ApiConfig.baseUrl}/auth/login'),
-        headers: {'Content-Type': 'application/json'},
+        Uri.parse('http://194.168.1.95:8000/api/auth/login'),
+        headers: {'Content-Type': 'application/json; charset=UTF-8'},
         body: jsonEncode({
-          'email': _emailController.text,
-          'password': _passwordController.text,
+          'email': _emailController.text.trim(),
+          'password': _passwordController.text.trim(),
         }),
       );
 
+      final data = jsonDecode(response.body);
+      final message = data['message'] ?? 'Unknown response';
+
+      // Always show server message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final token = data['token'];
+        // Save token and user info
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('token', token);
-        if (mounted) {
-          Navigator.pushReplacementNamed(context, '/home');
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Login gagal: ${response.body}')),
-          );
-        }
+        await prefs.setString('token', data['token']);
+        await prefs.setString('user', jsonEncode(data['user']));
+
+        // Navigate to home
+        if (!mounted) return;
+        Navigator.pushReplacementNamed(context, '/home');
       }
-    } catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Terjadi kesalahan: $error')),
-        );
-      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Connection error. Please check your internet connection.',
+          ),
+        ),
+      );
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Login')),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Icon(Icons.lock_outline, size: 80, color: Colors.blue),
+              const SizedBox(height: 40),
+
+              // Email
+              TextFormField(
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.email),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your email';
+                  }
+                  if (!value.contains('@')) {
+                    return 'Please enter a valid email';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+
+              // Password
+              TextFormField(
+                controller: _passwordController,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'Password',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.lock),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your password';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 24),
+
+              // Login Button
+              ElevatedButton(
+                onPressed: _isLoading ? null : _login,
+                style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16)),
+                child: _isLoading
+                    ? const CircularProgressIndicator()
+                    : const Text('LOGIN', style: TextStyle(fontSize: 16)),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Register Link
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text("Don't have an account?"),
+                  TextButton(
+                    onPressed: () => Navigator.pushNamed(context, '/register'),
+                    child: const Text('Register'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -67,118 +151,5 @@ class _LoginScreenState extends State<LoginScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Card(
-            elevation: 8,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Login',
-                      style:
-                          Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ) ??
-                              const TextStyle(
-                                  fontSize: 24, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 24),
-                    TextFormField(
-                      controller: _emailController,
-                      decoration: const InputDecoration(
-                        labelText: 'Email',
-                        prefixIcon: Icon(Icons.email_outlined),
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Email tidak boleh kosong';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _passwordController,
-                      decoration: const InputDecoration(
-                        labelText: 'Password',
-                        prefixIcon: Icon(Icons.lock_outline),
-                        border: OutlineInputBorder(),
-                      ),
-                      obscureText: true,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Password tidak boleh kosong';
-                        }
-                        if (value.length < 6) {
-                          return 'Password minimal 6 karakter';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _handleLogin,
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: _isLoading
-                            ? const SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Text('Masuk'),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text('Belum punya akun? '),
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.pushNamed(context, '/register');
-                          },
-                          child: Text(
-                            'Daftar',
-                            style: TextStyle(
-                              color: Theme.of(context).primaryColor,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }

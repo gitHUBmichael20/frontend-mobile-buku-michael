@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:front_end_mobile/providers/book_provider.dart';
-import 'package:front_end_mobile/screens/home_screen.dart';
 import 'package:front_end_mobile/screens/auth/login_buku.dart';
+import 'package:front_end_mobile/screens/home_screen.dart';
 
 void main() {
+  // ignore: avoid_print
+  print('Starting app');
   runApp(
     MultiProvider(
       providers: [
@@ -26,7 +28,11 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const LoginScreen(),
+      home: const HomeScreen(),
+      routes: {
+        '/login': (context) => LoginScreen(),
+        '/home': (context) => const HomeScreen(),
+      },
     );
   }
 }

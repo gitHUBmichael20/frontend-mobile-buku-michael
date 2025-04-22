@@ -78,6 +78,7 @@ class HomeScreen extends StatelessWidget {
             context,
             MaterialPageRoute(builder: (_) => const TambahBukuScreen()),
           ).then((_) {
+            // ignore: use_build_context_synchronously
             context.read<BookProvider>().fetchBooks();
           });
         },

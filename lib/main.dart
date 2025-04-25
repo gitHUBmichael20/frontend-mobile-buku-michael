@@ -5,8 +5,6 @@ import 'package:front_end_mobile/screens/auth/login_buku.dart';
 import 'package:front_end_mobile/screens/home_screen.dart';
 
 void main() {
-  // ignore: avoid_print
-  print('Starting app');
   runApp(
     MultiProvider(
       providers: [
@@ -28,7 +26,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const HomeScreen(),
+      initialRoute: '/login',
       routes: {
         '/login': (context) => LoginScreen(),
         '/home': (context) => const HomeScreen(),

@@ -1,89 +1,207 @@
 import 'package:flutter/material.dart';
-import 'package:front_end_mobile/models/book_model.dart';
-import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:front_end_mobile/screens/tambah_buku_screen.dart';
+import 'package:provider/provider.dart';
+import 'package:front_end_mobile/models/book_model.dart';
 import 'package:front_end_mobile/providers/book_provider.dart';
-import 'buku_detail_screen.dart';
+import 'package:front_end_mobile/screens/buku_detail_screen.dart';
+import 'package:front_end_mobile/screens/tambah_buku_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  // Color palette - simplified
+  final Color primaryColor = const Color(0xFF213448);
+  final Color accentColor = const Color(0xFF547792);
+  final Color backgroundColor = const Color(0xFFF5F5F5);
+  final Color textColor = const Color(0xFF333333);
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: backgroundColor,
       appBar: AppBar(
+        elevation: 2,
+        backgroundColor: primaryColor,
         title: Text(
           'Perpustakaan Digital',
           style: GoogleFonts.poppins(
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+            color: Colors.white,
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, size: 24),
+            icon: const Icon(Icons.refresh, color: Colors.white),
             onPressed: () => context.read<BookProvider>().fetchBooks(),
           ),
         ],
-        elevation: 1,
       ),
-      body: Consumer<BookProvider>(
-        builder: (context, provider, _) {
-          if (provider.isLoading) {
-            return const Center(
-              child: CircularProgressIndicator(
-                strokeWidth: 2.5,
-              ),
-            );
-          }
-
-          if (provider.errorMessage.isNotEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Text(
-                  provider.errorMessage,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.poppins(
-                    color: Colors.red[600],
-                    fontSize: 14,
-                  ),
+      body: Column(
+        children: [
+          // Search bar
+          Container(
+            padding: const EdgeInsets.all(16),
+            color: Colors.white,
+            child: TextField(
+              controller: _searchController,
+              style: GoogleFonts.poppins(color: textColor),
+              decoration: InputDecoration(
+                hintText: 'Cari judul atau penulis...',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                      )
+                    : null,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: accentColor.withOpacity(0.3)),
                 ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: accentColor, width: 2),
+                ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                filled: true,
+                fillColor: Colors.white,
               ),
-            );
-          }
-
-          return RefreshIndicator(
-            color: Colors.blue[800],
-            onRefresh: () => provider.fetchBooks(),
-            child: ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: provider.books.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                final book = provider.books[index];
-                return BookCard(book: book);
+              onChanged: (value) {
+                setState(() => _searchQuery = value);
               },
             ),
-          );
-        },
-      ),
+          ),
+          // Book list
+          Expanded(
+            child: Consumer<BookProvider>(
+              builder: (context, provider, _) {
+                if (provider.isLoading) {
+                  return Center(
+                    child: CircularProgressIndicator(color: accentColor),
+                  );
+                }
 
+                if (provider.errorMessage.isNotEmpty) {
+                  return _buildErrorWidget(provider);
+                }
+
+                // Filter books based on search query
+                final filteredBooks = provider.books
+                    .where((book) =>
+                        _searchQuery.isEmpty ||
+                        book.judulBuku
+                            .toLowerCase()
+                            .contains(_searchQuery.toLowerCase()) ||
+                        book.penulis
+                            .toLowerCase()
+                            .contains(_searchQuery.toLowerCase()))
+                    .toList();
+
+                if (filteredBooks.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.search_off, size: 48, color: accentColor),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Buku tidak ditemukan',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            color: textColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return RefreshIndicator(
+                  color: accentColor,
+                  onRefresh: () => provider.fetchBooks(),
+                  child: GridView.builder(
+                    padding: const EdgeInsets.all(12),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      childAspectRatio: 0.7,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                    ),
+                    itemCount: filteredBooks.length,
+                    itemBuilder: (context, index) {
+                      return BookCard(book: filteredBooks[index]);
+                    },
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.blue,
+        backgroundColor: accentColor,
         child: const Icon(Icons.add, color: Colors.white),
         onPressed: () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const TambahBukuScreen()),
           ).then((_) {
-            // ignore: use_build_context_synchronously
             context.read<BookProvider>().fetchBooks();
           });
         },
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+    );
+  }
+
+  Widget _buildErrorWidget(BookProvider provider) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.error_outline, size: 48, color: accentColor),
+            const SizedBox(height: 16),
+            Text(
+              provider.errorMessage,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                color: textColor,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => provider.fetchBooks(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryColor,
+                foregroundColor: Colors.white,
+              ),
+              child: Text('Coba Lagi',
+                  style: GoogleFonts.poppins(fontWeight: FontWeight.w500)),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -95,122 +213,136 @@ class BookCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 12,
-            offset: Offset(0, 6),
-          ),
-        ],
+    final Color primaryColor = const Color(0xFF213448);
+    final Color accentColor = const Color(0xFF547792);
+
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => BukuDetailScreen(book: book),
+        ),
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => BukuDetailScreen(book: book),
-              fullscreenDialog: true,
+      child: Card(
+        elevation: 3,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Book Cover
+            Expanded(
+              flex: 3,
+              child: ClipRRect(
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(12)),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.network(
+                      book.sampulBuku,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: Colors.grey[200],
+                          child: const Icon(
+                            Icons.image_not_supported,
+                            size: 40,
+                            color: Colors.grey,
+                          ),
+                        );
+                      },
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Center(
+                          child: CircularProgressIndicator(
+                            color: accentColor,
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                    loadingProgress.expectedTotalBytes!
+                                : null,
+                          ),
+                        );
+                      },
+                    ),
+                    // Year label
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: primaryColor.withOpacity(0.8),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          book.tahunTerbit.toString(),
+                          style: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
-          child: Row(
-            children: [
-              // Accent stripe
-              Container(
-                width: 4,
-                height: 120,
-                decoration: BoxDecoration(
-                  color: Colors.blueAccent,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(16),
-                    bottomLeft: Radius.circular(16),
-                  ),
-                ),
-              ),
-              // Content
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // ID & Year
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.blue[50],
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              'ID: ${book.idBuku}',
-                              style: GoogleFonts.poppins(
-                                fontSize: 12,
-                                color: Colors.blue[800],
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
+            // Book Info
+            Expanded(
+              flex: 2,
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      book.judulBuku,
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: primaryColor,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      book.penulis,
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: accentColor,
+                        fontStyle: FontStyle.italic,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const Spacer(),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[200],
+                            borderRadius: BorderRadius.circular(4),
                           ),
-                          Spacer(),
-                          Text(
-                            book.tahunTerbit.toString(),
+                          child: Text(
+                            'ID: ${book.idBuku}',
                             style: GoogleFonts.poppins(
-                              color: Colors.grey[600],
-                              fontSize: 13,
+                              fontSize: 10,
+                              color: primaryColor,
                             ),
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      // Title
-                      Text(
-                        book.judulBuku,
-                        style: GoogleFonts.poppins(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey[900],
                         ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 6),
-                      // Author
-                      Text(
-                        book.penulis,
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      // Description
-                      Text(
-                        book.deskripsiBuku,
-                        style: GoogleFonts.poppins(
-                          fontSize: 13,
-                          color: Colors.grey[700],
-                          height: 1.5,
-                        ),
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

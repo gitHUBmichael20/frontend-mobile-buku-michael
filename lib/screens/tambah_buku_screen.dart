@@ -56,7 +56,7 @@ class _TambahBukuScreenState extends State<TambahBukuScreen> {
     setState(() => _isSubmitting = true);
     FocusScope.of(context).unfocus();
 
-    final url = Uri.parse('${ApiConfig.baseUrl}/api/simpan');
+    final url = Uri.parse('${ApiConfig.baseUrl}/buku/simpan');
     final body = jsonEncode({
       'judul_buku': _judulCtrl.text,
       'penulis': _penulisCtrl.text,
